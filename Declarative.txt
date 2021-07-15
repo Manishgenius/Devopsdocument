@@ -1,0 +1,102 @@
+pipeline{
+agent any
+/*
+agent {
+label 'nodejsslave'
+*/
+tools{
+maven 'maven3.8.1'
+}
+triggers{
+//poll scm
+pollSCM('* * * * *')
+//build periodcally
+//cron('* * * * *')
+//Github Webhook
+//githubPush()
+}
+options{
+buildDiscarder(logRotator(artifactDaysToKeepStr: '2', artifactNumToKeepStr: '', daysToKeepStr: '2', numToKeepStr: '2'))
+timestamps()
+}
+stages{
+stage('Checkoutcode')
+{
+steps{
+git branch: 'development', credentialsId: 'c3c3f55e-3eb3-41ac-b796-00f033ba5355', url: 'https://github.com/Manishgenius/maven-web-application.git'
+
+}
+
+}
+stage('Build'){
+steps{
+sh "mvn clean package"
+}
+
+}
+stage('ExecutesonarqubeReport'){
+steps{
+
+sh "mvn clean sonar:sonar"
+}
+}
+
+stage('Uploadartifacttonexus'){
+steps{
+
+sh "mvn clean deploy"
+}
+}
+stage('UPloadtoTomcatservers'){
+steps{
+
+sshagent(['23d61288-84f5-49c3-8a0f-b82655de24b4']) {
+sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.233.83.235:/opt/tomcat/webapps/"
+}
+}
+}
+}
+post{
+success{
+emailext body: '''Build Over...Declarative way-Success
+
+Regards
+Manish
+9821770545''', subject: 'Build Over...Declarative way', to: 'mnshkmrpnd@gmail.com'
+cleanWs()
+}
+failure{
+emailext body: '''Build Over...Declarative way-Failed
+
+Regards
+Manish
+9821770545''', subject: 'Build Over...Declarative way', to: 'mnshkmrpnd@gmail.com'
+cleanWs()
+}
+
+always{
+emailext body: '''Build Over...Declarative way-Failed
+
+Regards
+Manish
+9821770545''', subject: 'Build Over...Declarative way', to: 'mnshkmrpnd@gmail.com'
+cleanWs()
+}
+}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
